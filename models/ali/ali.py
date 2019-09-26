@@ -197,7 +197,7 @@ class Discriminator(nn.Module):
         output_z = self.infer_z(z)
         output_features = self.infer_joint(torch.cat([output_x, output_z], dim=1))
         output = self.final(output_features)
-        return output.squeeze()
+        return output.view(output.size(0), 1)
 
 
 class ALIModel(BaseALI):
