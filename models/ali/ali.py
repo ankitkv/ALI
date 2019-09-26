@@ -14,9 +14,8 @@ class Decoder(nn.Module):
     def __init__(self, latent_size, leak=0.1):
         super().__init__()
 
-        self.output_bias = nn.Parameter(torch.zeros(3, 32, 32), requires_grad=True)
         self.main = nn.Sequential(
-            nn.ConvTranspose2d(latent_size, 256, 4, stride=1, bias=False),
+            nn.ConvTranspose2d(latent_size, 256, 4, bias=False),
             nn.BatchNorm2d(256),
             nn.LeakyReLU(leak, inplace=True),
 
@@ -24,7 +23,7 @@ class Decoder(nn.Module):
             nn.BatchNorm2d(128),
             nn.LeakyReLU(leak, inplace=True),
 
-            nn.ConvTranspose2d(128, 64, 4, stride=1, bias=False),
+            nn.ConvTranspose2d(128, 64, 4, bias=False),
             nn.BatchNorm2d(64),
             nn.LeakyReLU(leak, inplace=True),
 
@@ -32,16 +31,18 @@ class Decoder(nn.Module):
             nn.BatchNorm2d(32),
             nn.LeakyReLU(leak, inplace=True),
 
-            nn.ConvTranspose2d(32, 32, 5, stride=1, bias=False),
+            nn.ConvTranspose2d(32, 32, 5, bias=False),
             nn.BatchNorm2d(32),
             nn.LeakyReLU(leak, inplace=True),
 
-            nn.ConvTranspose2d(32, 32, 1, stride=1, bias=False),
+            nn.ConvTranspose2d(32, 32, 1, bias=False),
             nn.BatchNorm2d(32),
             nn.LeakyReLU(leak, inplace=True),
 
-            nn.ConvTranspose2d(32, 3, 1, stride=1, bias=False)
+            nn.ConvTranspose2d(32, 3, 1, bias=False)
         )
+
+        self.output_bias = nn.Parameter(torch.zeros(1, 3, 32, 32))
 
     def forward(self, input_):
         output = self.main(input_)
@@ -59,7 +60,7 @@ class Encoder(nn.Module):
             latent_size = latent_size * 2
 
         self.main1 = nn.Sequential(
-            nn.Conv2d(3, 32, 5, stride=1, bias=False),
+            nn.Conv2d(3, 32, 5, bias=False),
             nn.BatchNorm2d(32),
             nn.LeakyReLU(leak, inplace=True),
 
@@ -67,7 +68,7 @@ class Encoder(nn.Module):
             nn.BatchNorm2d(64),
             nn.LeakyReLU(leak, inplace=True),
 
-            nn.Conv2d(64, 128, 4, stride=1, bias=False),
+            nn.Conv2d(64, 128, 4, bias=False),
             nn.BatchNorm2d(128),
             nn.LeakyReLU(leak, inplace=True),
 
@@ -77,26 +78,28 @@ class Encoder(nn.Module):
         )
 
         self.main2 = nn.Sequential(
-            nn.Conv2d(256, 512, 4, stride=1, bias=False),
+            nn.Conv2d(256, 512, 4, bias=False),
             nn.BatchNorm2d(512),
             nn.LeakyReLU(leak, inplace=True)
         )
 
         self.main3 = nn.Sequential(
-            nn.Conv2d(512, 512, 1, stride=1, bias=False),
+            nn.Conv2d(512, 512, 1, bias=False),
             nn.BatchNorm2d(512),
             nn.LeakyReLU(leak, inplace=True)
         )
 
         self.main4 = nn.Sequential(
-            nn.Conv2d(512, latent_size, 1, stride=1, bias=True)
+            nn.Conv2d(512, latent_size, 1, bias=False)
         )
+
+        self.output_bias = nn.Parameter(torch.zeros(1, latent_size, 1, 1))
 
     def forward(self, input_):
         x1 = self.main1(input_)
         x2 = self.main2(x1)
         x3 = self.main3(x2)
-        output = self.main4(x3)
+        output = self.main4(x3) + self.output_bias
         if self.reparameterization:
             mean = output[:, :self.latent_size]
             logvar = output[:, self.latent_size:]
@@ -144,43 +147,39 @@ class Discriminator(nn.Module):
         super().__init__()
 
         self.infer_x = nn.Sequential(
-            nn.Conv2d(3, 32, 5, stride=1, bias=True),
+            nn.Conv2d(3, 32, 5),
             nn.LeakyReLU(leak, inplace=True),
 
-            nn.Conv2d(32, 64, 4, stride=2, bias=False),
-            nn.BatchNorm2d(64),
+            nn.Conv2d(32, 64, 4, stride=2),
             nn.LeakyReLU(leak, inplace=True),
 
-            nn.Conv2d(64, 128, 4, stride=1, bias=False),
-            nn.BatchNorm2d(128),
+            nn.Conv2d(64, 128, 4),
             nn.LeakyReLU(leak, inplace=True),
 
-            nn.Conv2d(128, 256, 4, stride=2, bias=False),
-            nn.BatchNorm2d(256),
+            nn.Conv2d(128, 256, 4, stride=2),
             nn.LeakyReLU(leak, inplace=True),
 
-            nn.Conv2d(256, 512, 4, stride=1, bias=False),
-            nn.BatchNorm2d(512),
+            nn.Conv2d(256, 512, 4),
             nn.LeakyReLU(leak, inplace=True)
         )
 
         self.infer_z = nn.Sequential(
-            nn.Conv2d(latent_size, 512, 1, stride=1, bias=False),
+            nn.Conv2d(latent_size, 512, 1, bias=False),
             nn.LeakyReLU(leak, inplace=True),
 
-            nn.Conv2d(512, 512, 1, stride=1, bias=False),
+            nn.Conv2d(512, 512, 1, bias=False),
             nn.LeakyReLU(leak, inplace=True)
         )
 
         self.infer_joint = nn.Sequential(
-            nn.Conv2d(1024, 1024, 1, stride=1, bias=True),
+            nn.Conv2d(1024, 1024, 1),
             nn.LeakyReLU(leak, inplace=True),
 
-            nn.Conv2d(1024, 1024, 1, stride=1, bias=True),
+            nn.Conv2d(1024, 1024, 1),
             nn.LeakyReLU(leak, inplace=True)
         )
 
-        self.final = nn.Conv2d(1024, 1, 1, stride=1, bias=True)
+        self.final = nn.Conv2d(1024, 1, 1)
 
         if use_sn:
             for module in self.modules():
