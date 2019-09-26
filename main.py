@@ -28,7 +28,7 @@ if __name__ == '__main__':
         help='weight to prevent for wasserstein discriminator output from drifting away from 0')
     arg(parser, 'latent_size', type=int, default=64, help='latent dimensions')
     arg(parser, 'leak', type=float, default=0.1, help='LeakyReLU slope')
-    arg(parser, 'gp', type=bool, default=False, help='Use the gradient penalty (only if wasserstein loss enabled).')
+    arg(parser, 'gp', type=bool, default=True, help='Use the gradient penalty (only if wasserstein loss enabled)')
     arg(parser, 'sn', type=bool, default=True, help='Use spectral norm in the discriminator.')
     arg(parser, 'sn_g', type=bool, default=True, help='Use spectral norm in the generator.')
     arg(parser, 'grad_norm', type=float, default=5.0, help='gradient norm clipping (-1 to disable)')
