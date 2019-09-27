@@ -32,6 +32,7 @@ class ALIRunner(BaseALIRunner):
             z = self.model.prepare_batch(z)
             x = self.model.run_batch([None, z], visualize=True)
             vis_data = x.cpu().numpy()
+            aspect = 1.0
         else:
             batch = next(self.reader.iter_batches(split, self.batch_size, shuffle=True, partial_batching=True,
                                                   threads=self.threads, max_batches=1))
@@ -41,8 +42,9 @@ class ALIRunner(BaseALIRunner):
             x = x.cpu().numpy()[None, ...]
             vis_data = np.concatenate([y, x], axis=0)
             vis_data = np.swapaxes(vis_data, 0, 1).reshape(-1, *x.shape[2:])
+            aspect = 2.0
 
-        misc.save_comparison_grid(fname, vis_data, border_shade=0.5, retain_sequence=True)
+        misc.save_comparison_grid(fname, vis_data, border_shade=0.5, retain_sequence=True, desired_aspect=aspect)
         print('* Visualizations saved to', fname)
 
     def run(self, train_split='train', val_split='val', test_split='test', visualize_only=False,
