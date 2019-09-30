@@ -45,9 +45,7 @@ class Decoder(nn.Module):
         self.output_bias = nn.Parameter(torch.zeros(1, 3, 32, 32))
 
     def forward(self, input_):
-        output = self.main(input_)
-        output = torch.tanh(output + self.output_bias)
-        return output
+        return torch.tanh(self.main(input_) + self.output_bias)
 
 
 class Encoder(nn.Module):
@@ -59,7 +57,7 @@ class Encoder(nn.Module):
         if reparameterization:
             latent_size = latent_size * 2
 
-        self.main1 = nn.Sequential(
+        self.main = nn.Sequential(
             nn.Conv2d(3, 32, 5, bias=False),
             nn.BatchNorm2d(32),
             nn.LeakyReLU(leak, inplace=True),
@@ -74,32 +72,23 @@ class Encoder(nn.Module):
 
             nn.Conv2d(128, 256, 4, stride=2, bias=False),
             nn.BatchNorm2d(256),
-            nn.LeakyReLU(leak, inplace=True)
-        )
+            nn.LeakyReLU(leak, inplace=True),
 
-        self.main2 = nn.Sequential(
             nn.Conv2d(256, 512, 4, bias=False),
             nn.BatchNorm2d(512),
-            nn.LeakyReLU(leak, inplace=True)
-        )
+            nn.LeakyReLU(leak, inplace=True),
 
-        self.main3 = nn.Sequential(
             nn.Conv2d(512, 512, 1, bias=False),
             nn.BatchNorm2d(512),
-            nn.LeakyReLU(leak, inplace=True)
-        )
+            nn.LeakyReLU(leak, inplace=True),
 
-        self.main4 = nn.Sequential(
             nn.Conv2d(512, latent_size, 1, bias=False)
         )
 
         self.output_bias = nn.Parameter(torch.zeros(1, latent_size, 1, 1))
 
     def forward(self, input_):
-        x1 = self.main1(input_)
-        x2 = self.main2(x1)
-        x3 = self.main3(x2)
-        output = self.main4(x3) + self.output_bias
+        output = self.main(input_) + self.output_bias
         if self.reparameterization:
             mean = output[:, :self.latent_size]
             logvar = output[:, self.latent_size:]
